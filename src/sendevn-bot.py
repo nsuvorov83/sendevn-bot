@@ -4,6 +4,7 @@ import smtplib
 import textwrap
 from email.mime.text import MIMEText
 import datetime
+import json
 
 #Configuration
 CFG_TOKEN = os.environ.get('CFG_TOKEN') #TELEGRAM_BOT_TOKEN
@@ -18,9 +19,10 @@ try:
 except:
     CFG_OWNER_ID = os.environ.get('CFG_OWNER_ID')
 
+#https://github.com/eternnoir/pyTelegramBotAPI
 bot = telebot.TeleBot(CFG_TOKEN)
 
-@bot.message_handler(content_types=['text'])
+@bot.message_handler(content_types=['text', 'audio', 'document', 'photo', 'video'])
 def get_text_messages(message):
     #Checking whether it's owner of the bot
     if message.from_user.id == CFG_OWNER_ID:
@@ -28,21 +30,48 @@ def get_text_messages(message):
     else: 
         pass
 
+def _is_photo(message):
+        return message.photo
+
+def _is_text(message):
+    return message.text
+
+def processText(message):
+    return message.text
+
+def processPhoto(message):
+    ff= message.photo[-1]
+    file_info = bot.get_file(ff.file_id)
+    downloaded_file = bot.download_file(file_info.file_path)
+    return 0
+
 def do_next(message):
+
+    txt = ''
+
+    if _is_text(message):
+        #Text handler
+        txt = processText(message)
+    
+    if _is_photo(message):
+        #Photo handler
+        processPhoto(message)
+
     #Ping
-    if(message.text == 'ping'):
+    if(txt == 'ping'):
         bot.send_message(message.from_user.id, "pong")
         return 0
     
     #Sening a message to outlook
     #Check if Subject is too long
-    txt = message.text
+
     msg = MIMEText('')
     if len(txt) > 30:
-        txt = textwrap.shorten(txt, width=30, placeholder="...")
-        msg = MIMEText(message.text)
+        txt_subject = textwrap.shorten(txt, width=30, placeholder="...")
+        msg = MIMEText(txt)
     else:
-        msg = MIMEText(message.text)
+        txt_subject = txt
+        msg = MIMEText(txt)
     
     #Check whether forwarded from another user
     if "forward_sender_name" in message.json:
@@ -50,20 +79,21 @@ def do_next(message):
     elif "forward_from" in message.json:
         txt = f'{txt}'
 
+
     #Make labels
     d = datetime.date.today()
 
     #Add ready data to MIME object
     msg['From'] = CFG_SMTP_FROM
     msg['To'] = CFG_SMTP_TO
-    msg['Subject'] = f'{txt} #{d.year}'
+    msg['Subject'] = f'{txt_subject} #{d.year}'
 
     try:
-        server = smtplib.SMTP_SSL('smtp.yandex.ru:465')
-        server.login(CFG_SMTP_LOGIN, CFG_SMTP_PASS)
-        server.sendmail(CFG_SMTP_FROM, CFG_SMTP_TO, msg.as_string()) 
+        #server = smtplib.SMTP_SSL('smtp.yandex.ru:465')
+        #server.login(CFG_SMTP_LOGIN, CFG_SMTP_PASS)
+        #server.sendmail(CFG_SMTP_FROM, CFG_SMTP_TO, msg.as_string()) 
         bot.send_message(message.from_user.id, "Задача отправлена в Evernote")
-        server.quit()
+        #server.quit()
     except Exception as err:
         #Exceptions processing with sending text of an error
         bot.send_message(message.from_user.id, f"При отправке сообщения произошла ошибка: {str(err)}")
