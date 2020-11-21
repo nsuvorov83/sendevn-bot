@@ -6,12 +6,18 @@ from email.mime.text import MIMEText
 import datetime
 import json
 
+
 #Configuration
 CFG_TOKEN = os.environ.get('CFG_TOKEN') #TELEGRAM_BOT_TOKEN
 CFG_SMTP_LOGIN = os.environ.get('CFG_SMTP_LOGIN') #'%YOUR_SMTP_LOGIN_ON_YANDEX%'
 CFG_SMTP_PASS = os.environ.get('CFG_SMTP_PASS') #'%YOUR_SMTP_PASS_ON_YANDEX%'
 CFG_SMTP_FROM = os.environ.get('CFG_SMTP_FROM') #'%FROM_EMAIL_ADDRESS%'
 CFG_SMTP_TO = os.environ.get('CFG_SMTP_TO') #'%TO_EMAIL_EVERNOTE_ADDRESS%'
+
+#Common variables
+dt = datetime.datetime.now()
+timestamp = dt.timestamp()
+d = datetime.date.today()
 
 #Change type if OWNER_ID is str
 try:
@@ -43,6 +49,11 @@ def processPhoto(message):
     ff= message.photo[-1]
     file_info = bot.get_file(ff.file_id)
     downloaded_file = bot.download_file(file_info.file_path)
+    ext = os.path.split(file_info.file_path)[1].split('.')[1]
+    cached_file_name = str(timestamp) + '.' + ext
+    src = os.getcwd() + os.path.sep + 'cache' + os.path.sep + cached_file_name
+    with open(src, 'wb') as new_file:
+        new_file.write(downloaded_file)
     return 0
 
 def do_next(message):
@@ -78,10 +89,6 @@ def do_next(message):
         txt = f'{txt}'
     elif "forward_from" in message.json:
         txt = f'{txt}'
-
-
-    #Make labels
-    d = datetime.date.today()
 
     #Add ready data to MIME object
     msg['From'] = CFG_SMTP_FROM
