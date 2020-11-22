@@ -3,6 +3,8 @@ import telebot
 import smtplib
 import textwrap
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
 import datetime
 import json
 
@@ -15,9 +17,8 @@ CFG_SMTP_FROM = os.environ.get('CFG_SMTP_FROM') #'%FROM_EMAIL_ADDRESS%'
 CFG_SMTP_TO = os.environ.get('CFG_SMTP_TO') #'%TO_EMAIL_EVERNOTE_ADDRESS%'
 
 #Common variables
-dt = datetime.datetime.now()
-timestamp = dt.timestamp()
 d = datetime.date.today()
+now = datetime.datetime.now()
 
 #Change type if OWNER_ID is str
 try:
@@ -36,6 +37,21 @@ def get_text_messages(message):
     else: 
         pass
 
+def cachFile(file_info):
+    #Saving a file to the cache dir and return its name
+    #Getting timestamp for filename
+    dt = datetime.datetime.now()
+    timestamp = dt.timestamp()
+    #Getting info from file
+    downloaded_file = bot.download_file(file_info.file_path)
+    ext = os.path.split(file_info.file_path)[1].split('.')[1]
+    cached_file_name = str(timestamp) + '.' + ext
+    src = os.getcwd() + os.path.sep + 'cache' + os.path.sep + cached_file_name
+    #Writting a file
+    with open(src, 'wb') as new_file:
+        new_file.write(downloaded_file)
+    return src
+
 def _is_photo(message):
         return message.photo
 
@@ -45,28 +61,27 @@ def _is_text(message):
 def processText(message):
     return message.text
 
-def processPhoto(message):
-    ff= message.photo[-1]
-    file_info = bot.get_file(ff.file_id)
-    downloaded_file = bot.download_file(file_info.file_path)
-    ext = os.path.split(file_info.file_path)[1].split('.')[1]
-    cached_file_name = str(timestamp) + '.' + ext
-    src = os.getcwd() + os.path.sep + 'cache' + os.path.sep + cached_file_name
-    with open(src, 'wb') as new_file:
-        new_file.write(downloaded_file)
-    return 0
+def getPhotoCached(message):
+    #Returns list of photos in a message
+    cached_files = []
+    last_id = ""
+    for ff in message.photo:
+        #Add files to cache
+        file_info = bot.get_file(ff.file_id)
+        if file_info.file_id == last_id: pass
+        asrc = cachFile(file_info)
+        cached_files.append(asrc)
+        last_unique_id = file_info.file_id
+    return cached_files
 
 def do_next(message):
 
     txt = ''
+    txt_subject = ''
 
     if _is_text(message):
         #Text handler
         txt = processText(message)
-    
-    if _is_photo(message):
-        #Photo handler
-        processPhoto(message)
 
     #Ping
     if(txt == 'ping'):
@@ -74,15 +89,18 @@ def do_next(message):
         return 0
     
     #Sening a message to outlook
-    #Check if Subject is too long
+    ##Check if Subject is too long
+    msg = MIMEMultipart()
 
-    msg = MIMEText('')
     if len(txt) > 30:
         txt_subject = textwrap.shorten(txt, width=30, placeholder="...")
-        msg = MIMEText(txt)
+    elif len(txt) == 0:
+        txt_subject = 'Из Telegram ' + str(now)
     else:
         txt_subject = txt
-        msg = MIMEText(txt)
+    
+    msg.attach(MIMEText(txt))
+    
     
     #Check whether forwarded from another user
     if "forward_sender_name" in message.json:
@@ -90,17 +108,27 @@ def do_next(message):
     elif "forward_from" in message.json:
         txt = f'{txt}'
 
+    if _is_photo(message):
+        #Photo handler
+        cached_files = getPhotoCached(message)
+        #Insert into e-mail
+        for f in cached_files:
+            with open(f, 'rb') as image_file:
+                msg.attach(MIMEImage(image_file.read()))
+        #TODO Deleting cached files
+
     #Add ready data to MIME object
     msg['From'] = CFG_SMTP_FROM
     msg['To'] = CFG_SMTP_TO
     msg['Subject'] = f'{txt_subject} #{d.year}'
+    msg_full = msg.as_string()
 
     try:
-        #server = smtplib.SMTP_SSL('smtp.yandex.ru:465')
-        #server.login(CFG_SMTP_LOGIN, CFG_SMTP_PASS)
-        #server.sendmail(CFG_SMTP_FROM, CFG_SMTP_TO, msg.as_string()) 
+        server = smtplib.SMTP_SSL('smtp.yandex.ru:465')
+        server.login(CFG_SMTP_LOGIN, CFG_SMTP_PASS)
+        server.sendmail(CFG_SMTP_FROM, CFG_SMTP_TO, msg_full) 
         bot.send_message(message.from_user.id, "Задача отправлена в Evernote")
-        #server.quit()
+        server.quit()
     except Exception as err:
         #Exceptions processing with sending text of an error
         bot.send_message(message.from_user.id, f"При отправке сообщения произошла ошибка: {str(err)}")
