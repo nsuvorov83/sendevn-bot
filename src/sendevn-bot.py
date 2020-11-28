@@ -62,16 +62,14 @@ def processText(message):
     return message.text
 
 def getPhotoCached(message):
-    #Returns list of photos in a message
+    #Returns list of photos in a message (large size)
     cached_files = []
-    last_id = ""
-    for ff in message.photo:
-        #Add files to cache
-        file_info = bot.get_file(ff.file_id)
-        if file_info.file_id == last_id: pass
-        asrc = cachFile(file_info)
-        cached_files.append(asrc)
-        last_unique_id = file_info.file_id
+    ff = message.photo[2]
+
+    #Add file (large size) to cache
+    file_info = bot.get_file(ff.file_id)
+    asrc = cachFile(file_info)
+    cached_files.append(asrc)
     return cached_files
 
 def do_next(message):
