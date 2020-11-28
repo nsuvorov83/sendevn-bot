@@ -5,6 +5,7 @@ import textwrap
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
+from email.mime.application import MIMEApplication
 import datetime
 import json
 
@@ -55,18 +56,35 @@ def cachFile(file_info):
 def _is_photo(message):
         return message.photo
 
+def _is_document(message):
+        return message.document
+
 def _is_text(message):
     return message.text
 
+def _is_caption(message):
+    return message.caption
+
 def processText(message):
-    return message.text
+    #Process text or caption (if image or document)
+    if _is_text(message): return message.text
+    elif _is_caption(message): return message.caption
 
 def getPhotoCached(message):
     #Returns list of photos in a message (large size)
     cached_files = []
     ff = message.photo[2]
-
     #Add file (large size) to cache
+    file_info = bot.get_file(ff.file_id)
+    asrc = cachFile(file_info)
+    cached_files.append(asrc)
+    return cached_files
+
+def getDocumentCached(message):
+    #Returns list of files in a message
+    cached_files = []
+    ff = message.document
+    #Add file to cache
     file_info = bot.get_file(ff.file_id)
     asrc = cachFile(file_info)
     cached_files.append(asrc)
@@ -77,7 +95,7 @@ def do_next(message):
     txt = ''
     txt_subject = ''
 
-    if _is_text(message):
+    if _is_text(message) or _is_caption(message):
         #Text handler
         txt = processText(message)
 
@@ -106,14 +124,29 @@ def do_next(message):
     elif "forward_from" in message.json:
         txt = f'{txt}'
 
+
     if _is_photo(message):
         #Photo handler
         cached_files = getPhotoCached(message)
         #Insert into e-mail
         for f in cached_files:
-            with open(f, 'rb') as image_file:
-                msg.attach(MIMEImage(image_file.read()))
-        #TODO Deleting cached files
+            with open(f, 'rb') as file:
+                msg.attach(MIMEImage(file.read()))
+
+    if _is_document(message):
+        #Doc handler
+        cached_files = getDocumentCached(message)
+        #Insert into e-mail
+        for f in cached_files:
+            with open(f, 'rb') as file:
+                filename = os.path.basename(f)
+                att = MIMEApplication(file.read())
+                att.add_header('Content-Disposition','attachment; filename="%s"' % filename)
+                msg.attach(att)
+    
+    #TODO Deleting cached files
+
+        
 
     #Add ready data to MIME object
     msg['From'] = CFG_SMTP_FROM
