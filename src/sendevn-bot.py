@@ -8,6 +8,7 @@ from email.mime.image import MIMEImage
 from email.mime.application import MIMEApplication
 import datetime
 import json
+import shutil
 
 
 #Configuration
@@ -48,7 +49,13 @@ def cachFile(file_info):
     ext = os.path.split(file_info.file_path)[1].split('.')[1]
     cached_file_name = str(timestamp) + '.' + ext
     src = os.getcwd() + os.path.sep + 'cache' + os.path.sep + cached_file_name
+    
     #Writting a file
+    try:
+        os.mkdir('cache')
+    except:
+        pass 
+    
     with open(src, 'wb') as new_file:
         new_file.write(downloaded_file)
     return src
@@ -143,10 +150,6 @@ def do_next(message):
                 att = MIMEApplication(file.read())
                 att.add_header('Content-Disposition','attachment; filename="%s"' % filename)
                 msg.attach(att)
-    
-    #TODO Deleting cached files
-
-        
 
     #Add ready data to MIME object
     msg['From'] = CFG_SMTP_FROM
@@ -163,6 +166,10 @@ def do_next(message):
     except Exception as err:
         #Exceptions processing with sending text of an error
         bot.send_message(message.from_user.id, f"При отправке сообщения произошла ошибка: {str(err)}")
+
+    #Delete cache dir
+    cached_dir = os.getcwd() + os.path.sep + 'cache' + os.path.sep
+    shutil.rmtree(cached_dir)
 
 #Running the bot
 bot.polling(True, 0)

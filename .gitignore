@@ -1,4 +1,4 @@
 .vscode
 .env
-cache/*
+cache/**
 .DS_Store
