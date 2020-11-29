@@ -32,10 +32,14 @@ except:
 bot = telebot.TeleBot(CFG_TOKEN)
 
 @bot.message_handler(content_types=['text', 'audio', 'document', 'photo', 'video'])
-def get_text_messages(message):
+def get_messages(message):
     #Checking whether it's owner of the bot
     if message.from_user.id == CFG_OWNER_ID:
-        do_next(message)
+        try:
+            do_next(message)
+        except Exception as err:
+            #Exceptions processing with sending text of an error
+            bot.send_message(message.from_user.id, f"Произошла ошибка: {str(err)}")
     else: 
         pass
 
@@ -50,12 +54,10 @@ def cachFile(file_info):
     cached_file_name = str(timestamp) + '.' + ext
     src = os.getcwd() + os.path.sep + 'cache' + os.path.sep + cached_file_name
     
-    #Writting a file
-    try:
+    #Making cache dir
+    if not os.path.exists(os.path.split(src)[0]):
         os.mkdir('cache')
-    except:
-        pass 
-
+    #Writting a file
     with open(src, 'wb') as new_file:
         new_file.write(downloaded_file)
     return src
@@ -162,15 +164,11 @@ def do_next(message):
     msg['Subject'] = f'{txt_subject} #{d.year} #из_telegram'
     msg_full = msg.as_string()
 
-    try:
-        server = smtplib.SMTP_SSL('smtp.yandex.ru:465')
-        server.login(CFG_SMTP_LOGIN, CFG_SMTP_PASS)
-        server.sendmail(CFG_SMTP_FROM, CFG_SMTP_TO, msg_full) 
-        bot.send_message(message.from_user.id, "Задача отправлена в Evernote")
-        server.quit()
-    except Exception as err:
-        #Exceptions processing with sending text of an error
-        bot.send_message(message.from_user.id, f"При отправке сообщения произошла ошибка: {str(err)}")
+    server = smtplib.SMTP_SSL('smtp.yandex.ru:465')
+    server.login(CFG_SMTP_LOGIN, CFG_SMTP_PASS)
+    server.sendmail(CFG_SMTP_FROM, CFG_SMTP_TO, msg_full) 
+    bot.send_message(message.from_user.id, "Задача отправлена в Evernote")
+    server.quit()
 
     #Delete cache dir
     cached_dir = os.getcwd() + os.path.sep + 'cache' + os.path.sep
