@@ -55,7 +55,7 @@ def cachFile(file_info):
         os.mkdir('cache')
     except:
         pass 
-    
+
     with open(src, 'wb') as new_file:
         new_file.write(downloaded_file)
     return src
@@ -111,6 +111,11 @@ def do_next(message):
         bot.send_message(message.from_user.id, "pong")
         return 0
     
+    #Credentials input
+    if(txt == '/creds'):
+        bot.send_message(message.from_user.id, "pong")
+        return 0
+    
     #Sening a message to outlook
     ##Check if Subject is too long
     msg = MIMEMultipart()
@@ -154,7 +159,7 @@ def do_next(message):
     #Add ready data to MIME object
     msg['From'] = CFG_SMTP_FROM
     msg['To'] = CFG_SMTP_TO
-    msg['Subject'] = f'{txt_subject} #{d.year}'
+    msg['Subject'] = f'{txt_subject} #{d.year} #из_telegram'
     msg_full = msg.as_string()
 
     try:
