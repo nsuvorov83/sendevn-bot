@@ -118,8 +118,7 @@ def do_next(message):
     #Dev Stop server
     if(txt == 'stopserver'):
         bot.send_message(message.from_user.id, "Stopping server...")
-        os.system('killall python')
-        return 0
+        raise SystemExit
 
     #Sening a message to outlook
     ##Check if Subject is too long
