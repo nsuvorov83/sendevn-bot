@@ -110,11 +110,17 @@ def do_next(message):
         bot.send_message(message.from_user.id, "pong")
         return 0
     
-    #Credentials input
+    #Dev Credentials input
     if(txt == '/creds'):
-        bot.send_message(message.from_user.id, "pong")
+        bot.send_message(message.from_user.id, "Change credentials")
         return 0
-    
+
+    #Dev Stop server
+    if(txt == 'stopserver'):
+        bot.send_message(message.from_user.id, "Stopping server...")
+        os.system('killall python')
+        return 0
+
     #Sening a message to outlook
     ##Check if Subject is too long
     msg = MIMEMultipart()
