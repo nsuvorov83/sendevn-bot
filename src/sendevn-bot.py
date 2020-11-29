@@ -7,8 +7,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
 from email.mime.application import MIMEApplication
 import datetime
-import json
 import shutil
+import tempfile
 
 
 #Configuration
@@ -52,11 +52,8 @@ def cachFile(file_info):
     downloaded_file = bot.download_file(file_info.file_path)
     ext = os.path.split(file_info.file_path)[1].split('.')[1]
     cached_file_name = str(timestamp) + '.' + ext
-    src = os.getcwd() + os.path.sep + 'cache' + os.path.sep + cached_file_name
+    src = tempfile.gettempdir() + os.path.sep + cached_file_name
     
-    #Making cache dir
-    if not os.path.exists(os.path.split(src)[0]):
-        os.mkdir('cache')
     #Writting a file
     with open(src, 'wb') as new_file:
         new_file.write(downloaded_file)
@@ -169,10 +166,6 @@ def do_next(message):
     server.sendmail(CFG_SMTP_FROM, CFG_SMTP_TO, msg_full) 
     bot.send_message(message.from_user.id, "Задача отправлена в Evernote")
     server.quit()
-
-    #Delete cache dir
-    cached_dir = os.getcwd() + os.path.sep + 'cache' + os.path.sep
-    shutil.rmtree(cached_dir)
 
 #Running the bot
 bot.polling(True, 0)
