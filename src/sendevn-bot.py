@@ -79,7 +79,7 @@ def processText(message):
 def getPhotoCached(message):
     #Returns list of photos in a message (large size)
     cached_files = []
-    ff = message.photo[2]
+    ff = message.photo[-1]
     #Add file (large size) to cache
     file_info = bot.get_file(ff.file_id)
     asrc = cachFile(file_info)
