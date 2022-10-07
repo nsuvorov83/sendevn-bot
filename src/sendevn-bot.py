@@ -163,7 +163,7 @@ def do_next(message):
     #Add ready data to MIME object
     msg['From'] = CFG_SMTP_FROM
     msg['To'] = CFG_SMTP_TO
-    msg['Subject'] = f'{txt_subject} #{d.year} #из_telegram'
+    msg['Subject'] = f'{txt_subject}'
     msg_full = msg.as_string()
 
     server = smtplib.SMTP_SSL('smtp.yandex.ru:465')
