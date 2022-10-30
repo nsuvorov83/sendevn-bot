@@ -147,7 +147,10 @@ def do_next(message):
         #Insert into e-mail
         for f in cached_files:
             with open(f, 'rb') as file:
-                msg.attach(MIMEImage(file.read()))
+                filename = os.path.basename(f)
+                att = MIMEImage(file.read())
+                att.add_header('Content-Disposition','attachment; filename="%s"' % filename)
+                msg.attach(att)
 
     if _is_document(message):
         #Doc handler
@@ -169,7 +172,7 @@ def do_next(message):
     server = smtplib.SMTP_SSL('smtp.yandex.ru:465')
     server.login(CFG_SMTP_LOGIN, CFG_SMTP_PASS)
     server.sendmail(CFG_SMTP_FROM, CFG_SMTP_TO, msg_full) 
-    bot.send_message(message.from_user.id, "Задача отправлена в Evernote")
+    bot.send_message(message.from_user.id, "Заметка отправлена в Obsidian")
     server.quit()
 
 #Running the bot
