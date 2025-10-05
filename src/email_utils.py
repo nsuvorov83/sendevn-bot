@@ -17,7 +17,7 @@ def send_email(message, txt):
     if len(txt) > 30:
         txt_subject = textwrap.shorten(txt, width=30, placeholder="...")
     elif len(txt) == 0 or txt.startswith('#'):
-        txt_subject = 'Из Telegram ' + str(now)
+        txt_subject = 'Из Telegram ' + str(now).replace(":", "")
     else:
         txt_subject = txt
     
